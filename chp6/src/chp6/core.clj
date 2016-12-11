@@ -1,26 +1,17 @@
 (def apply-message-to
     (fn [type instance message & args]
         (let [method (or (message (:__instance_methods__ type)) message)]
-            (apply method instance args)
-        )
-    )
-)
+            (apply method instance args))))
 
 (def make 
     (fn [type & args]
         (let [seeded {:__class_symbol__ (:__own_symbol__ type)}]
-            (apply apply-message-to type seeded :add-instance-values args)
-        )
-    )
-)
+            (apply apply-message-to type seeded :add-instance-values args))))
 
 (def send-to
     (fn [instance message & args]
         (let [type (eval (:__class_symbol__ instance))]
-            (apply apply-message-to type instance message args)
-        )
-    )
-)
+            (apply apply-message-to type instance message args))))
 
 (def class-from-instance
      (fn [instance]
@@ -28,23 +19,28 @@
        (eval (:__class_symbol__ instance))))
 
 (def class-symbol-above (fn [type-symbol]
-    (:__superclass_symbol__ (eval type-symbol))
-))
+    (:__superclass_symbol__ (eval type-symbol))))
 
 (def lineage-1 (fn [type-symbol sol]
     (if (nil? type-symbol)
         sol
         (recur
             (class-symbol-above type-symbol) 
-            (cons type-symbol sol))
-    )
-))
+            (cons type-symbol sol)))))
 
 (def lineage (fn [type-symbol] (lineage-1 type-symbol [])))
 
 (def class-instance-methods (fn [type-symbol]
-    (:__instance_methods__ (eval type-symbol))    
-))
+    (:__instance_methods__ (eval type-symbol))))
+
+(def method-cache (fn [type]
+    (let [type-symbol (:__own_symbol__ type)
+          method-maps (map class-instance-methods (lineage type-symbol))]
+          (apply merge method-maps))))
+
+(def apply-message-to (fn [type instance message & args]
+    (let [method (message (method-cache type))]
+        (apply method instance args))))
 
 (def RedPoint {
     :__own_symbol__ 'RedPoint
